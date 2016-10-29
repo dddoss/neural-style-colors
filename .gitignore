@@ -1,0 +1,5 @@
+# .gitignore for neural-style-color
+
+*.pyc
+*.mat
+venv/
