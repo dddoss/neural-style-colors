@@ -1,5 +1,3 @@
-#!/bin/source
-
 if [ -z "$PS1" ]; then echo -e "This script must be sourced. Use \"source ./setup.sh\" instead." ; exit ; fi
 
 if [ ! -e ./imagenet-vgg-verydeep-19.mat ]; then
