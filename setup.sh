@@ -10,4 +10,4 @@ if [ ! -e ./venv/ ]; then
 fi
 
 source ./venv/bin/activate;
-pip install -r ./requirements.txt;
+pip install -q -r ./requirements.txt;
