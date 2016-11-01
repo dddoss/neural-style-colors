@@ -3,4 +3,5 @@
 *.pyc
 *.mat
 *.swp
+vgg_model/vgg19_data.npy
 venv/

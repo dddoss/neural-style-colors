@@ -1,7 +1,8 @@
 if [ -z "$PS1" ]; then echo -e "This script must be sourced. Use \"source ./setup.sh\" instead." ; exit ; fi
 
-if [ ! -e ./imagenet-vgg-verydeep-19.mat ]; then
-    wget http://www.vlfeat.org/matconvnet/models/imagenet-vgg-verydeep-19.mat;
+if [ ! -e ./vgg_model/vgg19_data.npy ]; then
+    wget people.csail.mit.edu/ddoss/vgg19/tf/vgg19_data.npy \
+        -O ./vgg_model/vgg19_data.npy;
 fi
 
 if [ ! -e ./venv/ ]; then
