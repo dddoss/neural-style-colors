@@ -4,15 +4,21 @@ from vgg_model import vgg19_code
 import tensorflow as tf
 import numpy as np
 from PIL import Image
+import random
+import string
 
 class Vgg(object):
 
     # Somehow statically load vgg into a form that can be held in-memory and quickly used to process images; some sort of global variable
-    def __init__(self, height, width):
+    def __init__(self, height, width, scope=None):
+        if scope==None:
+            scope = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(8))
+
         self.sess = tf.Session()
-        self.image_ph = tf.placeholder(tf.float32, shape=(1, height, width, 3))
-        self.vgg_network = vgg19_code.VGG_ILSVRC_19_layers({'input': self.image_ph})
-        self.vgg_network.load('./vgg_model/vgg19_data.npy', self.sess)
+        with tf.variable_scope(scope):
+            self.image_ph = tf.placeholder(tf.float32, shape=(1, height, width, 3))
+            self.vgg_network = vgg19_code.VGG_ILSVRC_19_layers({'input': self.image_ph})
+            self.vgg_network.load('./vgg_model/vgg19_data.npy', self.sess)
 
     # input_image is m*n*3 numpy array;
     # returns VggActivations object complete with activations and gram matrices calculated
