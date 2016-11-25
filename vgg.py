@@ -1,13 +1,45 @@
 # vgg.py: Given input images (as numpy arrays), run them through the pretrained vgg network and retreive activations
 
-# Somehow statically load vgg into a form that can be held in-memory and quickly used to process images; some sort of global variable
+from vgg_model import vgg19_code
+import tensorflow as tf
+import numpy as np
+from PIL import Image
+
+class Vgg(object):
+
+    # Somehow statically load vgg into a form that can be held in-memory and quickly used to process images; some sort of global variable
+    def __init__(self, height, width):
+        self.sess = tf.Session()
+        self.image_ph = tf.placeholder(tf.float32, shape=(1, height, width, 3))
+        self.vgg_network = vgg19_code.VGG_ILSVRC_19_layers({'input': self.image_ph})
+        self.vgg_network.load('./vgg_model/vgg19_data.npy', self.sess)
+
+    # input_image is m*n*3 numpy array;
+    # returns VggActivations object complete with activations and gram matrices calculated
+    def get_activations(self, input_image):
+        return VggActivations(self.vgg_network.get_activations({self.image_ph: [input_image, ]}, self.sess))
 
 
-# input_image is m*n numpy array; returns 3D numpy array with weights[i, j, l] cooresponding to filter i, position j, layer l
-def weight_activations(input_image):
-    # Take the input image, run it through the vgg network, return the weight activation matrix
-    pass
+class VggActivations(object):
 
-# returns the Gram Matrix for the input image: gram[i, j, l] = sum_k (weights[i, k, l]*weights[j, k, l] )
-def gram_matrix(input_image):
-    pass
+    def __init__(self, activations_list):
+        # list of numpy arrays: activations[l][i, j] is activation for layer l, filter i, position j
+        self.activations = []
+
+        # list of numpy arrays: grams[l][i, j] = sum_k (activations[l][i, k]*activations[l][j, k])
+        self.grams = [] 
+
+        for l in range(len(activations_list)):
+            matrix = np.array(activations_list[l])
+            matrix = np.rollaxis(matrix, 2) # moves filter axis to front
+            matrix = matrix.reshape((matrix.shape[0], -1)) # flatten width x height into positions
+            self.activations.append(matrix)
+        for l in range(len(activations_list)):
+            matrix = self.activations[l]
+            gram = np.dot(matrix, matrix.T)
+            self.grams.append(gram)
+        
+def load_image(filepath):
+    image = Image.open(filepath)
+    data = np.asarray(image, dtype='int32')
+    return data
