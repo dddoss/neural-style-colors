@@ -10,5 +10,7 @@ output_path = "./images/output.png"         # relative path of output image
 content_layer = -1                            # Which vgg layer to use for matchinging content
 style_layers = [-1, -2, -3, -4, -5]       # Which vgg layer to use for matching style
 style_weights = [1.0/len(style_layers)]*len(style_layers) # How to relatively weight style layers; default to equal weights
+iterations = 1000;
 alpha = 0.5                                 # alpha ~ [0, 1]; relative weighting of style vs content in output
-
+beta = 500                                  #ration of alpha/beta = 1e-3
+learning_rate = 2.0                         # arbitrarily picked
