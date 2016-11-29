@@ -6,61 +6,61 @@ import random
 #matrix style size is mxnx3 in np array format
 #matrix content size is c x d
 
-def total_loss(sess, content_network, style_network, content_weight, style_grams):
-	#Calculate content loss
-	loss_content = content_loss(sess, content_network)
+def total_loss(content_acts, style_grams, out_acts, out_grams):
+    #Calculate content loss
+    loss_content = content_loss(content_acts, out_acts)
 
-	#Calculate style loss - Eq. 5 from paper
-	E = [style_loss(sess.run(style_network[i]), style_network[i], N, M) for i in style_layers]
-    W = [w for w in style_weights]
-    loss_style = sum([W[l] * E[l] for l in range(len(style_layers))])
+    #Calculate style loss - Eq. 5 from paper
+    loss_style = style_loss(style_grams, out_grams)
 
-	#TODO: Add denoising
-	total_variation_loss = 0
+    #TODO: Add denoising
+    total_variation_loss = 0
 
-	loss = alpha*loss_content+beta*loss_style #+total_variation_loss
-	return loss
+    loss = params.alpha*loss_content+params.beta*loss_style #+total_variation_loss
+    return loss
 
 #Squared-Error Loss between two feature representations
-def content_loss(sess, content_network):
-	#p is original image, x is generated image
-	p = sess.run(content_network[content_layer])
-	f = content_network[content_layer]
+def content_loss(content_acts, out_acts):
+    # in is original, out is generated
+    content_in = content_acts[params.content_layer]
+    content_out = out_acts[params.content_layer]
 
-	N = p.shape[3] #number of distinct filters
-	M = p.shape[1]*p.shape[2] #height times width of each feature maps
+    # loss = 0.5*sum((out_acts-in_acts))
+    # Artistic Style, eq. 1
+    loss = tf.nn.l2_loss(tf.reduce_sum(content_out-content_in))
+    return loss
 
-	#Eq. 1 in Neural Algorithm of Artistic Style Paper
-	loss_content = 0.5 * tf.reduce_sum(tf.pow(x - f, 2))
-	return loss_content
+def style_loss(style_grams, out_grams):
+    layer_losses = []
+    for i, l in enumerate(params.style_layers):
+        in_gram = style_grams[l]
+        out_gram = out_grams[l]
+        in_shape = in_gram.get_shape()
+        print(in_shape)
+        Nl = in_shape[0].value
+        Ml = in_shape[1].value
+        #Eq. 4 from paper
+        layer_loss = (1/(4* Nl**2 * Ml**2 ))* tf.reduce_sum(tf.square(in_gram-out_gram))
+        layer_losses.append(layer_loss * params.style_weights[i])
 
-def style_loss(a, g, N, M):
-	#Create Gram matrix for original image
-	at = tf.reshape(a, (M,N))
-	A = tf.matmul(tf.transpose(at), at)
-	#Create Gram matrix for generated image
-	gt = tf.reshape(g, (M,N))
-	G = tf.matmul(tf.transpose(gt), gt)
+    style_loss = tf.add_n(layer_losses)
+    return style_loss
 
-	#Eq. 4 from paper
-	style_loss = (1/(4* N**2 * M**2 ))* tf.reduce_sum(tf.pow(G-A, 2))
-	return style_loss
-
-def optimization(loss, learning_rate, iterations):
-	init_op = tf.initizalize_all_variables()
-    train_op = tf.train.AdamOptimizer(learning_rate).minimize(loss)
+def optimization(loss, sess):
+    init_op = tf.initialize_all_variables()
+    train_op = tf.train.AdamOptimizer(params.learning_rate).minimize(loss)
 
     optimal = None
     optimalLoss = float('inf')
+    sess.run(init_op)
+    for i in range(params.iterations):
+        print('iteration '+str(i))
+        sess.run(train_op)
 
-    with tf.Session as sess:
-    	sess.run(init_op)
-    	for i in range(iterations):
-    		final = (i == iterations-1)
-    		sess.run(train_op)
+        thisLoss = loss.eval()
+        if thisLoss < optimalLoss:
+            print('better loss: '+str(thisLoss))
+            optimalLoss = thisLoss
+            optimal = output.eval()
 
-    		if final:
-    			current = loss.eval()
-    			if current < best:
-    				optimalLoss = current
-    				optimal = image.eval()
+    return optimal

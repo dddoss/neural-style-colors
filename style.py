@@ -1,11 +1,14 @@
 import params
 import vgg
 import numpy as np
+import gradientDescent as gd
+from PIL import Image
+import tensorflow as tf
 
 # Given two input images (one for content, the other for style), generates a novel image
 # with the content of the first and the style of the second
 
-def generate_image(content_gram, style_weights):
+def generate_image(sess, content_acts, style_grams, output_shape):
     # Use TensorFlow to generate an image with the same gram matrix as content_gram
     # and the same weight activations as style_weights via gradient descent.
 
@@ -14,31 +17,32 @@ def generate_image(content_gram, style_weights):
     # 3. Error is difference between given matrices and output matrices
     # 4. Gradient descent to improve error
     # 5. Repeat until some threshold is reached
-    pass
+
+    output_var = tf.Variable(tf.random_uniform(output_shape, dtype=tf.float32, name='output_img'))
+    out_acts, out_grams = vgg.vgg_variable(tf.expand_dims(output_var, 0), sess, scope='output')
+    loss = gd.total_loss(content_acts, style_grams, out_acts, out_grams)
+    output_image = gd.optimization(loss, sess)
+    return output_image
+
 
 def main():
     # Load images into memory as numpy arrays
     print('Loading images')
     content_im = vgg.load_image(params.content_path)
     style_im = vgg.load_image(params.style_path)
-    (content_height, content_width) = content_im.shape[0:2]
-    (style_height, style_width) = style_im.shape[0:2]
+    output_shape = content_im.shape
 
     # Retrieve activations for the given input images
     print('Building networks')
-    content_network = vgg.Vgg(content_height, content_width, scope='content')
-    style_network = vgg.Vgg(style_height, style_width, scope='style')
+    with tf.Session() as sess:
+        content_activations, _ = vgg.vgg_constant(content_im, sess, scope='content')
+        _, style_grams = vgg.vgg_constant(style_im, sess, scope='style')
 
-    print('Getting activations')
-    content_activ = content_network.get_activations(content_im)
-    style_activ = style_network.get_activations(style_im)
+        print('Generating image!')
+        output = generate_image(sess, content_activations, style_grams, output_shape)
+        im = Image.fromarray(output)
+        im.save(params.output_path)
 
-    # Extract the subsets of weights and gram matrices used for training
-    content_weight = content_activ.activations[params.content_layer]
-    style_grams = [style_activ.grams[i] for i in params.style_layers]
-
-    print('Generating image!')
-    generate_image(content_weight, style_grams)
 
 if __name__=='__main__':
     main()

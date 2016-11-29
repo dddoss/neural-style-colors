@@ -1,4 +1,5 @@
 from kaffe.tensorflow import Network
+import tensorflow as tf
 
 class VGG_ILSVRC_19_layers(Network):
     def setup(self):
@@ -36,7 +37,13 @@ class VGG_ILSVRC_19_layers(Network):
         for i in range(4):
             self.convs.append(self.layers['conv5_'+str(i+1)])
 
-    def get_activations(self, feed_dict, sess):
-        activations = [0]*len(self.convs)
-        activations = sess.run(self.convs, feed_dict=feed_dict)
-        return activations
+    def get_act_mats(self):
+        acts_trans = [tf.transpose(self.convs[i], [3, 0, 1, 2]) for i in range(len(self.convs))]
+        acts =  [tf.reshape(acts_trans[i], [acts_trans[i].get_shape()[0].value, -1]) for i in range(len(acts_trans))]
+        return acts
+
+    def get_grams(self):
+        acts = self.get_act_mats()
+        grams = [tf.matmul(acts[i], tf.transpose(acts[i])) for i in range(len(acts))]
+        return grams
+
