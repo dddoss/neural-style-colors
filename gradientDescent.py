@@ -1,6 +1,7 @@
 import params
 import numpy as np
 import tensorflow as tf
+from PIL import Image
 import random
 
 #matrix style size is mxnx3 in np array format
@@ -27,7 +28,7 @@ def content_loss(content_acts, out_acts):
 
     # loss = 0.5*sum((out_acts-in_acts))
     # Artistic Style, eq. 1
-    loss = tf.nn.l2_loss(tf.reduce_sum(content_out-content_in))
+    loss = tf.nn.l2_loss(content_out-content_in)
     return loss
 
 def style_loss(style_grams, out_grams):
@@ -46,12 +47,11 @@ def style_loss(style_grams, out_grams):
     style_loss = tf.add_n(layer_losses)
     return style_loss
 
-def optimization(loss, sess):
-    init_op = tf.initialize_all_variables()
+def optimization(loss, output, sess):
     train_op = tf.train.AdamOptimizer(params.learning_rate).minimize(loss)
-
     optimal = None
     optimalLoss = float('inf')
+    init_op = tf.initialize_all_variables()
     sess.run(init_op)
     for i in range(params.iterations):
         print('iteration '+str(i))
@@ -63,4 +63,10 @@ def optimization(loss, sess):
             optimalLoss = thisLoss
             optimal = output.eval()
 
+        if params.checkpoint and (i % params.checkpoint == 0):
+           array_to_image(optimal).save(params.output_path+'-check'+str(i)+'.jpg') 
+
     return optimal
+
+def array_to_image(out_array):
+    return Image.fromarray(np.clip(out_array, 0, 255).astype('uint8'))
