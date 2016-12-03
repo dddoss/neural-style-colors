@@ -20,7 +20,7 @@ def generate_image(sess, content_acts, style_grams, output_shape):
 
     output_var = tf.Variable(tf.random_uniform(output_shape, minval=0, maxval=255, dtype=tf.float32, name='output_img'))
     out_acts, out_grams = vgg.vgg_variable(tf.expand_dims(output_var, 0), sess, scope='output')
-    loss = gd.total_loss(content_acts, style_grams, out_acts, out_grams)
+    loss = gd.total_loss(content_acts, style_grams, out_acts, out_grams, output_var)
     output_image = gd.optimization(loss, output_var, sess)
     output_image = np.clip(output_image, 0, 255).astype('uint8')
     return output_image
@@ -32,6 +32,7 @@ def main():
     content_im = vgg.load_image(params.content_path)
     style_im = vgg.load_image(params.style_path)
     output_shape = content_im.shape
+    print(output_shape)
 
     # Retrieve activations for the given input images
     print('Building networks')
