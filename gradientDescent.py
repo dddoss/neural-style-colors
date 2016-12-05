@@ -53,7 +53,7 @@ def style_loss(style_grams, out_grams):
         out_gram = out_grams[l]/tensor_size(out_grams[l])
 
         #Eq. 4 from paper
-	layer_loss = tf.nn.l2_loss(in_gram-out_gram)/tensor_size(out_grams[l])
+        layer_loss = tf.nn.l2_loss(in_gram-out_gram)/tensor_size(out_grams[l])
         layer_losses.append(layer_loss * params.style_weights[i])
 
     style_loss = tf.add_n(layer_losses)
@@ -69,10 +69,10 @@ def optimization(loss, output, sess):
     for i in range(params.iterations):
         if params.checkpoint and (i % params.checkpoint == 0):
            scipy.misc.imsave(params.output_path+'-check'+str(i)+'.jpg', vgg.postprocess(optimal)) 
-	   np.save(params.output_path+'-check'+str(i)+'.npy', optimal)
+            np.save(params.output_path+'-check'+str(i)+'.npy', optimal)
         print('iteration '+str(i))
 
-	# Run one iteration of the training
+        # Run one iteration of the training
         thisLoss, thisOut, _ = sess.run((loss, output, train_op))
 
         if thisLoss < optimalLoss:

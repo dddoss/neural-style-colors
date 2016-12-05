@@ -3,7 +3,7 @@ import tensorflow as tf
 
 class VGG_ILSVRC_19_layers(Network):
     def setup(self):
-	(self.feed('input')
+        (self.feed('input')
              .conv(3, 3, 64, 1, 1, relu=False, name='conv1_1')
              .relu(name='relu1_1')
              .conv(3, 3, 64, 1, 1, relu=False, name='conv1_2')

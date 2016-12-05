@@ -48,12 +48,12 @@ def main():
     # Retrieve activations for the given input images
     print('Building networks')
     with tf.Session() as sess:
-	# Build the networks and run feedforward to get the activations for the inputs
+        # Build the networks and run feedforward to get the activations for the inputs
         content_acts_tensor, _ = vgg.net(content_ph, sess, scope='content')
         _, style_grams_tensor = vgg.net(style_ph, sess, scope='style')
-	feed_dict = {content_ph: np.array([content_im,]), style_ph: np.array([style_im,])}
-	content_activations = sess.run(content_acts_tensor, feed_dict=feed_dict)
-	style_grams = sess.run(style_grams_tensor, feed_dict=feed_dict)
+        feed_dict = {content_ph: np.array([content_im,]), style_ph: np.array([style_im,])}
+        content_activations = sess.run(content_acts_tensor, feed_dict=feed_dict)
+        style_grams = sess.run(style_grams_tensor, feed_dict=feed_dict)
 
         print('Generating image!')
         output = generate_image(sess, content_activations, style_grams, output_shape)

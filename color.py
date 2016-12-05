@@ -15,7 +15,7 @@ def load_image(filepath):
     image = Image.open(filepath)
     image = image.convert(mode="RGB")
     rgb2yiq = (
-	    0.299, 0.587, 0.114, 0,
+        0.299, 0.587, 0.114, 0,
         0.596, -0.0274, -0.322, 0,
         0.211, -0.523, 0.312, 0 )
     out = image.convert("RGB", rgb2yiq)
