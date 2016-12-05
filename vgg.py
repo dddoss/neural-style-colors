@@ -7,26 +7,28 @@ import scipy.misc
 import random
 import string
 
-# Somehow statically load vgg into a form that can be held in-memory and quickly used to process images; some sort of global variable
-def vgg_constant(image, sess, scope=None):
-    if scope==None:
-        scope = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(8))
-
-    with tf.variable_scope(scope):
-        image_tensor = tf.expand_dims(tf.constant(image), 0)
-        vgg_network = vgg19_code.VGG_ILSVRC_19_layers({'input': image_tensor}, trainable=False)
-        vgg_network.load('./vgg_model/vgg19_data.npy', sess)
-        return (vgg_network.get_act_mats(), vgg_network.get_grams())
-
-def vgg_variable(variable, sess, scope=None):
-    if scope==None:
-        scope = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(8))
-
-    with tf.variable_scope(scope):
-        vgg_network = vgg19_code.VGG_ILSVRC_19_layers({'input': variable}, trainable=False)
-        vgg_network.load('./vgg_model/vgg19_data.npy', sess)
-        return (vgg_network.get_act_mats(), vgg_network.get_grams())
-
 def load_image(filepath):
-    image = scipy.misc.imread(filepath).astype(np.float32)
+    image = scipy.misc.imread(filepath, mode='RGB').astype(np.float32)
     return image
+
+def net(image, sess, scope=None):
+    if scope==None:
+        scope = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(8))
+
+    with tf.variable_scope(scope):
+        vgg_network = vgg19_code.VGG_ILSVRC_19_layers({'input': image}, trainable=False)
+        vgg_network.load('./vgg_model/vgg19_data.npy', sess)
+        return (vgg_network.get_act_mats(), vgg_network.get_grams())
+
+# MEAN_PIXEL is a property of the VGG 19 network; it is sourced from the original paper
+# The network weights have been transformed to match an RGB image, so we don't have to
+# rotate the image channels here
+MEAN_PIXEL = np.array([123.68, 116.779, 103.939]).astype(np.float32)
+def preprocess(image):
+    newimg = np.array(image-MEAN_PIXEL)
+    return newimg
+
+def postprocess(image):
+    newimg = np.array(image)
+    newimg = np.clip(newimg+MEAN_PIXEL, 0, 255).astype(np.uint8)
+    return newimg

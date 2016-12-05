@@ -2,8 +2,8 @@ import params
 import vgg
 import numpy as np
 import gradientDescent as gd
-from PIL import Image
 import tensorflow as tf
+import scipy.misc
 
 # Given two input images (one for content, the other for style), generates a novel image
 # with the content of the first and the style of the second
@@ -18,33 +18,46 @@ def generate_image(sess, content_acts, style_grams, output_shape):
     # 4. Gradient descent to improve error
     # 5. Repeat until some threshold is reached
 
-    output_var = tf.Variable(tf.random_uniform(output_shape, minval=0, maxval=255, dtype=tf.float32, name='output_img'))
-    out_acts, out_grams = vgg.vgg_variable(tf.expand_dims(output_var, 0), sess, scope='output')
+    # Initialize the random noise image and build network for generating its activations
+    initial = tf.random_normal(output_shape, dtype=tf.float32)*0.256
+    output_var = tf.Variable(initial, dtype=tf.float32, name='output_img')
+    out_acts, out_grams = vgg.net(tf.expand_dims(output_var, 0), sess, scope='output')
+
+    # Build loss portion of graph
     loss = gd.total_loss(content_acts, style_grams, out_acts, out_grams, output_var)
+
+    # Generate output image via back-propogation
     output_image = gd.optimization(loss, output_var, sess)
-    output_image = np.clip(output_image, 0, 255).astype('uint8')
     return output_image
 
-
+content_activations = None
+style_grams = None
 def main():
-    # Load images into memory as numpy arrays
+    global content_activations
+    global style_grams
     print('Loading images')
-    content_im = vgg.load_image(params.content_path)
-    style_im = vgg.load_image(params.style_path)
+    # Load images into memory as numpy arrays, preprocess to feed into VGG
+    content_im = vgg.preprocess(vgg.load_image(params.content_path))
+    style_im = vgg.preprocess(vgg.load_image(params.style_path))
+
+    # Generate placeholders to get the activations for the inputs
+    content_ph = tf.placeholder(tf.float32, shape=(1,)+content_im.shape, name='content_ph')
+    style_ph = tf.placeholder(tf.float32, shape=(1,)+style_im.shape, name='style_ph')
     output_shape = content_im.shape
-    print(output_shape)
 
     # Retrieve activations for the given input images
     print('Building networks')
     with tf.Session() as sess:
-        content_activations, _ = vgg.vgg_constant(content_im, sess, scope='content')
-        _, style_grams = vgg.vgg_constant(style_im, sess, scope='style')
+	# Build the networks and run feedforward to get the activations for the inputs
+        content_acts_tensor, _ = vgg.net(content_ph, sess, scope='content')
+        _, style_grams_tensor = vgg.net(style_ph, sess, scope='style')
+	feed_dict = {content_ph: np.array([content_im,]), style_ph: np.array([style_im,])}
+	content_activations = sess.run(content_acts_tensor, feed_dict=feed_dict)
+	style_grams = sess.run(style_grams_tensor, feed_dict=feed_dict)
 
         print('Generating image!')
         output = generate_image(sess, content_activations, style_grams, output_shape)
-
-        image = Image.fromarray(output)
-        image.save(params.output_path+'.jpg')
+        scipy.misc.imsave(params.output_path+'.jpg', output)
 
 
 if __name__=='__main__':
