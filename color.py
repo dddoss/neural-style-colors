@@ -1,5 +1,6 @@
 # color.py : given input images (as numpy arrays), perform luminance-only color transfer
-
+import skimage.color
+from skimage import color
 from PIL import Image
 import numpy as np
 # many possible tactics to implement color, but main two are color histogram matching and luminance-only transfer
@@ -19,7 +20,7 @@ def load_image(filepath):
         0.596, -0.0274, -0.322, 0,
         0.211, -0.523, 0.312, 0 )
     out = image.convert("RGB", rgb2yiq)
-   
+#    out = skimage.color.rgb2yiq(image)  
     data = np.asarray(out, dtype='int32')
     return data
 
